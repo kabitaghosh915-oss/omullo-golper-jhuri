@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>মুক্তকথা - খাঁটি গল্প লেখার সোশ্যাল প্ল্যাটফর্ম</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Hind Siliguri', sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col selection:bg-amber-500 selection:text-black">
+
+  <!-- হেডার -->
+  <header class="bg-[#0f172a] border-b border-slate-800 sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-2 cursor-pointer" onclick="refreshApp()">
+        <span class="text-2xl">✍️</span>
+        <span class="text-xl font-bold text-amber-400">মুক্তকথা</span>
+      </div>
+
+      <div class="flex-1 max-w-md hidden sm:block relative">
+        <input 
+          type="text" 
+          id="desktopSearch" 
+          oninput="handleSearch(this.value)"
+          placeholder="গল্পের নাম, ধরণ বা লেখক দিয়ে খুঁজুন..." 
+          class="w-full bg-slate-900 border border-slate-700 rounded-full py-2 pl-10 pr-4 text-xs text-white focus:outline-none focus:border-amber-500"
+        />
+        <span class="absolute left-3.5 top-2.5 text-slate-500 text-xs">🔍</span>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <button onclick="showWallet()" title="আমার আয় ও রেভিনিউ পয়েন্ট" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-full text-emerald-400 font-medium">
+          💰 আয়
+        </button>
+        <button onclick="switchUserPrompt()" id="userBadge" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1.5 rounded-full text-amber-400 font-medium truncate max-w-[130px]">
+          লগইন / আইডি
+        </button>
+        <button onclick="openPublishModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3 sm:px-4 py-1.5 rounded-lg text-xs">
+          + গল্প লিখুন
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- মোবাইল সার্চ -->
+  <div class="p-3 sm:hidden bg-[#0f172a] border-b border-slate-800">
+    <input 
+      type="text" 
+      oninput="handleSearch(this.value)" 
+      placeholder="গল্প, ধরণ বা লেখক খুঁজুন..." 
+      class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500"
+    />
+  </div>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 flex-1 space-y-8 w-full">
+    <!-- টপ ১০ শোকেস -->
+    <section>
+      <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <span class="text-amber-400">★</span> টপ ১০ গল্প (৪.০ - ৫.০ স্টার ক্লাব)
+        </h2>
+        <span class="text-[11px] text-amber-500 font-semibold">টপ রেটেড</span>
+      </div>
+      <div id="topTenRail" class="flex gap-4 overflow-x-auto pb-3 no-scrollbar"></div>
+    </section>
+
+    <!-- হোম লাইব্রেরি -->
+    <section>
+      <div class="flex items-center justify-between mb-4 border-b border-slate-800 pb-2">
+        <h2 class="text-base font-bold text-white">📚 হোম লাইব্রেরি</h2>
+        <span class="text-xs text-slate-400" id="storyCount">লোড হচ্ছে...</span>
+      </div>
+      <div id="libraryGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+    </section>
+  </main>
+
+  <!-- রিডার মোডাল -->
+  <div id="readerModal" class="fixed inset-0 bg-black/85 hidden z-50 flex items-center justify-center p-3">
+    <div class="bg-[#111827] border border-slate-800 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 relative shadow-2xl">
+      <button onclick="closeReader()" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-white">&times;</button>
+      <div id="readerContent"></div>
+    </div>
+  </div>
+
+  <!-- ওয়ালেট মোডাল -->
+  <div id="walletModal" class="fixed inset-0 bg-black/85 hidden z-50 flex items-center justify-center p-3">
+    <div class="bg-[#111827] border border-slate-800 w-full max-w-md rounded-2xl p-6 relative shadow-2xl">
+      <button onclick="closeWallet()" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-white">&times;</button>
+      <h2 class="text-lg font-bold text-amber-400 mb-2">📊 লেখক আর্নিং ওয়ালেট</h2>
+      <p class="text-xs text-slate-400 mb-4">আপনার গল্পে দেখানো পোস্টার বিজ্ঞাপনের ইমপ্রেশন ও অর্জিত শেয়ার পয়েন্ট:</p>
+      
+      <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 mb-4 text-center">
+        <p class="text-xs text-slate-400">লেখক আইডি: <span id="walletAuthorId" class="text-amber-400 font-bold"></span></p>
+        <div class="text-3xl font-black text-emerald-400" id="walletAdPoints">0</div>
+        <p class="text-[11px] text-slate-500">পোস্টার ভিউ পয়েন্ট (Ad Impressions)</p>
+      </div>
+
+      <p class="text-[10px] text-slate-500 text-center leading-relaxed">
+        * পাঠক গল্প পড়ার সময় প্রতিটি পোস্টার লোড হলে পয়েন্ট স্বয়ংক্রিয়ভাবে জমা হয়।
+      </p>
+    </div>
+  </div>
+
+  <!-- পাবলিশ মোডাল -->
+  <div id="publishModal" class="fixed inset-0 bg-black/85 hidden z-50 flex items-center justify-center p-3">
+    <div class="bg-[#111827] border border-slate-800 w-full max-w-xl rounded-2xl p-6 relative shadow-2xl">
+      <button onclick="closePublishModal()" class="absolute top-4 right-4 text-2xl text-slate-400 hover:text-white">&times;</button>
+      <h2 class="text-lg font-bold text-amber-400 mb-1">নতুন গল্প প্রকাশনা</h2>
+      <p class="text-[11px] text-slate-400 mb-4">শুধুমাত্র খাঁটি টেক্সট। প্রকাশের সময় অপরিবর্তনীয়ভাবে সংরক্ষিত হবে।</p>
+      
+      <form onsubmit="submitStory(event)" class="space-y-4">
+        <div>
+          <label class="text-xs text-slate-300 block mb-1">গল্পের শিরোনাম *</label>
+          <input type="text" id="postTitle" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500" />
+        </div>
+        <div>
+          <label class="text-xs text-slate-300 block mb-1">ধরণ / জঁরা</label>
+          <input type="text" id="postGenre" placeholder="রহস্য, সায়েন্স-ফিকশন, সামাজিক" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500" />
+        </div>
+        <div>
+          <label class="text-xs text-slate-300 block mb-1">গল্পের বিষয়বস্তু *</label>
+          <textarea id="postContent" required rows="8" placeholder="গল্পটি লিখুন..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-amber-500"></textarea>
+        </div>
+        <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold py-2 rounded-lg text-xs">
+          🛡️ স্থায়ীভাবে প্রকাশ করুন
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let currentUserId = localStorage.getItem('mk_author_id') || '';
+    let currentFullName = localStorage.getItem('mk_full_name') || '';
+    let debounceTimer = null;
+    let readingFontSize = 14;
+
+    function updateBadge() {
+      document.getElementById('userBadge').innerText = currentUserId ? '@' + currentUserId : 'লগইন / আইডি';
+    }
+
+    async function switchUserPrompt() {
+      const id = prompt('আপনার Author ID দিন (যেমন: writer_01):', currentUserId);
+      if (!id) return;
+      const name = prompt('আপনার নাম:', currentFullName || id);
+      if (!name) return;
+
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authorId: id.trim(), fullName: name.trim() })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        currentUserId = data.user.authorId;
+        currentFullName = data.user.fullName;
+        localStorage.setItem('mk_author_id', currentUserId);
+        localStorage.setItem('mk_full_name', currentFullName);
+        updateBadge();
+        alert('স্বাগতম @' + currentUserId);
+      }
+    }
+
+    async function init() {
+      if (!currentUserId) {
+        currentUserId = 'user_' + Math.floor(Math.random() * 1000);
+        currentFullName = 'নবাগত পাঠক';
+        localStorage.setItem('mk_author_id', currentUserId);
+        localStorage.setItem('mk_full_name', currentFullName);
+      }
+      updateBadge();
+      await loadTopTen();
+      await loadLibrary();
+    }
+
+    function calculateReadingTime(text) {
+      const words = text.trim().split(/\s+/).length;
+      const minutes = Math.ceil(words / 180);
+      return minutes <= 1 ? '১ মিনিট পাঠ' : minutes + ' মিনিট পাঠ';
+    }
+
+    async function loadTopTen() {
+      const res = await fetch('/api/stories/top10');
+      const list = await res.json();
+      const rail = document.getElementById('topTenRail');
+      rail.innerHTML = '';
+
+      if (!list.length) {
+        rail.innerHTML = '<p class="text-xs text-slate-500 py-3">এখনও কোনো গল্প ৪+ রেটিং পায়নি।</p>';
+        return;
+      }
+
+      list.forEach((s, idx) => {
+        const div = document.createElement('div');
+        div.className = "flex-shrink-0 w-48 bg-slate-900 border border-amber-500/40 rounded-xl p-3 flex flex-col justify-between cursor-pointer hover:border-amber-400";
+        div.onclick = () => openReader(s._id);
+        div.innerHTML = `
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="bg-amber-500 text-slate-950 font-bold text-[9px] px-1.5 py-0.5 rounded">#${idx + 1} TOP</span>
+              <span class="text-amber-400 font-bold text-xs">★ ${s.averageRating}</span>
+            </div>
+            <h3 class="font-bold text-xs text-white line-clamp-2">${escapeHtml(s.title)}</h3>
+            <p class="text-[10px] text-slate-400 mt-1">@${s.authorId}</p>
+          </div>
+          <div class="mt-3 pt-2 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between">
+            <span>${escapeHtml(s.genre)}</span>
+            <span class="text-amber-400">পড়ুন &rarr;</span>
+          </div>
+        `;
+        rail.appendChild(div);
+      });
+    }
+
+    async function loadLibrary(q = '') {
+      const res = await fetch('/api/stories?q=' + encodeURIComponent(q));
+      const stories = await res.json();
+      const grid = document.getElementById('libraryGrid');
+      document.getElementById('storyCount').innerText = stories.length + ' টি গল্প';
+      grid.innerHTML = '';
+
+      if (!stories.length) {
+        grid.innerHTML = '<p class="col-span-full text-center text-xs text-slate-500 py-6">কোনো গল্প পাওয়া যায়নি।</p>';
+        return;
+      }
+
+      stories.forEach((s, index) => {
+        const dateStr = new Date(s.publishedTimestamp).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', year: 'numeric' });
+        const readTime = calculateReadingTime(s.content);
+        const likeCount = (s.likes && s.likes.length) || 0;
+        const commentCount = (s.comments && s.comments.length) || 0;
+        
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between cursor-pointer hover:border-slate-700";
+        card.onclick = () => openReader(s._id);
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between text-[11px] text-slate-400 mb-2">
+              <span class="bg-slate-800 text-amber-400 px-2 py-0.5 rounded text-[10px]">${escapeHtml(s.genre)}</span>
+              <span class="text-amber-400">★ ${s.averageRating > 0 ? s.averageRating : 'নতুন'} (${s.totalRatingsCount})</span>
+            </div>
+            <h3 class="font-bold text-sm text-white line-clamp-2">${escapeHtml(s.title)}</h3>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+              <span>লেখক: @${s.authorId}</span>
+              <span class="text-[10px] text-slate-500">⏱️ ${readTime}</span>
+            </div>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-800 text-[10px] text-slate-500 flex justify-between items-center">
+            <span>🔒 ${dateStr}</span>
+            <div class="flex gap-2 text-slate-400">
+              <span>❤️ ${likeCount}</span>
+              <span>💬 ${commentCount}</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+
+        // প্রতি ৪টি গল্পের পর ব্যানার বিজ্ঞাপন
+        if ((index + 1) % 4 === 0) {
+          const adCard = document.createElement('div');
+          adCard.className = "col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-4 bg-slate-950/80 border border-slate-800 rounded-xl p-4 my-2 flex flex-col items-center justify-center text-center shadow";
+          adCard.innerHTML = `
+            <span class="text-[9px] text-slate-500 uppercase tracking-widest mb-1.5 block">বিজ্ঞাপন • মুক্তকথা পার্টনার</span>
+            <div class="w-full max-w-[728px] h-[90px] bg-slate-900/90 border border-dashed border-slate-700 rounded-lg flex flex-col items-center justify-center text-slate-400 text-xs">
+              <span class="text-base mb-0.5">🖼️</span>
+              <span class="font-medium">হোমপেজ ব্যানার পোস্টার স্লট</span>
+              <span class="text-[10px] text-slate-600">[ কোম্পানি রেভিনিউ • 728x90 বা রেসপনসিভ ]</span>
+            </div>
+          `;
+          grid.appendChild(adCard);
+        }
+      });
+    }
+
+    function handleSearch(val) {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => { loadLibrary(val); }, 250);
+    }
+
+    // পড়ার মাঝে পোস্টার বিজ্ঞাপন রেন্ডার
+    function renderStoryWithAds(rawText, storyId, authorId) {
+      const paragraphs = rawText.split('\n').filter(p => p.trim() !== '');
+      let html = '';
+
+      paragraphs.forEach((p, idx) => {
+        html += `<p class="story-paragraph text-slate-200 leading-relaxed mb-4" style="font-size: ${readingFontSize}px;">${escapeHtml(p)}</p>`;
+
+        if ((idx + 1) % 3 === 0 && idx !== paragraphs.length - 1) {
+          html += `
+            <div class="my-6 mx-auto max-w-[340px] p-3 bg-slate-900 border border-slate-700/60 rounded-xl text-center shadow-lg">
+              <div class="flex justify-between items-center text-[10px] text-slate-400 mb-2 px-1">
+                <span>বিজ্ঞাপন</span>
+                <span class="text-amber-400 font-semibold">লেখক ও প্ল্যাটফর্ম সমর্থন</span>
+              </div>
+              <div class="w-[300px] h-[250px] mx-auto bg-slate-950 border border-dashed border-slate-700 rounded-lg flex flex-col items-center justify-center text-slate-400 text-xs">
+                <span class="text-3xl mb-1">📰</span>
+                <span class="font-medium text-slate-300">পোস্টার বিজ্ঞাপন</span>
+                <span class="text-[10px] text-slate-600 mt-1">[ 300 x 250 Medium Rectangle ]</span>
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      // লেখক রেভিনিউ ট্র্যাকিং কল
+      fetch('/api/ads/track-story-ad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storyId, authorId })
+      }).catch(() => {});
+
+      return html;
+    }
+
+    function adjustFontSize(delta) {
+      readingFontSize = Math.min(22, Math.max(12, readingFontSize + delta));
+      document.querySelectorAll('.story-paragraph').forEach(el => {
+        el.style.fontSize = readingFontSize + 'px';
+      });
+    }
+
+    async function openReader(id) {
+      const res = await fetch('/api/stories/' + id);
+      const story = await res.json();
+
+      let isFollowing = false;
+      if (currentUserId !== story.authorId) {
+        const fRes = await fetch(`/api/users/${currentUserId}/is-following/${story.authorId}`);
+        const fData = await fRes.json();
+        isFollowing = fData.isFollowing;
+      }
+
+      const isLiked = story.likes && story.likes.includes(currentUserId.toLowerCase().trim());
+      const dateStr = new Date(story.publishedTimestamp).toLocaleString('bn-BD', { dateStyle: 'long', timeStyle: 'short' });
+      const readTime = calculateReadingTime(story.content);
+
+      let followBtnHtml = '';
+      if (currentUserId !== story.authorId) {
+        followBtnHtml = `
+          <button onclick="toggleFollow('${story.authorId}')" id="followBtn" class="${isFollowing ? 'bg-slate-700 text-slate-300' : 'bg-amber-500 text-slate-950 font-bold'} text-xs px-3 py-1.5 rounded-lg">
+            ${isFollowing ? '✓ ফলোয়িং' : '+ লেখককে ফলো করুন'}
+          </button>
+        `;
+      }
+
+      // কমেন্ট লিস্ট তৈরি
+      let commentsListHtml = '';
+      if (story.comments && story.comments.length) {
+        story.comments.forEach(c => {
+          const cDate = new Date(c.createdAt).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short' });
+          commentsListHtml += `
+            <div class="bg-slate-900 border border-slate-800/80 p-3 rounded-lg text-left mb-2">
+              <div class="flex justify-between items-center mb-1 text-[11px]">
+                <span class="font-bold text-amber-400">@${escapeHtml(c.authorId)} <span class="text-slate-400 font-normal">(${escapeHtml(c.authorName)})</span></span>
+                <span class="text-slate-500">${cDate}</span>
+              </div>
+              <p class="text-slate-200 text-xs leading-relaxed">${escapeHtml(c.text)}</p>
+            </div>
+          `;
+        });
+      } else {
+        commentsListHtml = '<p class="text-xs text-slate-500 text-center py-2" id="noCommentNotice">এখনও কোনো মন্তব্য নেই। প্রথম মন্তব্যটি আপনিই করুন!</p>';
+      }
+
+      document.getElementById('readerContent').innerHTML = `
+        <div class="border-b border-slate-800 pb-3 mb-4">
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-amber-500 font-semibold uppercase tracking-wider">${escapeHtml(story.genre)}</span>
+            <div class="flex items-center gap-1 bg-slate-900 border border-slate-700 px-2 py-0.5 rounded text-xs text-slate-300">
+              <span class="text-slate-400">ফন্ট:</span>
+              <button onclick="adjustFontSize(-2)" class="px-1.5 hover:text-white font-bold">A-</button>
+              <button onclick="adjustFontSize(2)" class="px-1.5 hover:text-white font-bold">A+</button>
+            </div>
+          </div>
+          <h1 class="text-xl font-bold text-white mt-1">${escapeHtml(story.title)}</h1>
+          <div class="flex flex-wrap items-center justify-between mt-2 gap-2">
+            <div>
+              <p class="text-xs text-slate-300">লেখক: <span class="font-bold text-amber-400">@${story.authorId}</span> (${escapeHtml(story.authorName)})</p>
+              <p class="text-[10px] text-emerald-400">🛡️ কপিরাইট লকড: ${dateStr} • ⏱️ ${readTime}</p>
+            </div>
+            ${followBtnHtml}
+          </div>
+        </div>
+
+        <div id="storyBodyWrapper" class="my-6">
+          ${renderStoryWithAds(story.content, story._id, story.authorId)}
+        </div>
+
+        <!-- লাইক এবং রেটিং অ্যাকশন বার -->
+        <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-3 rounded-xl mb-6">
+          <button onclick="toggleLike('${story._id}')" id="likeBtn" class="flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg ${isLiked ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40' : 'bg-slate-800 text-slate-300 hover:text-rose-400'}">
+            <span>❤️</span> <span id="likeCountText">${story.likes ? story.likes.length : 0} লাইক</span>
+          </button>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 hidden sm:inline">রেটিং দিন:</span>
+            <div class="flex gap-1 text-lg text-slate-600 cursor-pointer select-none">
+              <span onclick="rateStory('${story._id}', 1)" class="hover:text-amber-400">★</span>
+              <span onclick="rateStory('${story._id}', 2)" class="hover:text-amber-400">★</span>
+              <span onclick="rateStory('${story._id}', 3)" class="hover:text-amber-400">★</span>
+              <span onclick="rateStory('${story._id}', 4)" class="hover:text-amber-400">★</span>
+              <span onclick="rateStory('${story._id}', 5)" class="hover:text-amber-400">★</span>
+            </div>
+            <span class="text-xs text-amber-400 font-bold ml-1">★ ${story.averageRating}</span>
+          </div>
+        </div>
+
+        <!-- কমেন্ট সেকশন -->
+        <div class="border-t border-slate-800 pt-6 mt-6">
+          <h3 class="text-sm font-bold text-white mb-3">মন্তব্যসমূহ (<span id="commentHeaderCount">${story.comments ? story.comments.length : 0}</span>)</h3>
+          <div class="flex gap-2 mb-4">
+            <input type="text" id="commentInput" placeholder="গল্পটি কেমন লাগল? আপনার মন্তব্য লিখুন..." class="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-amber-500" />
+            <button onclick="submitComment('${story._id}')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs">মন্তব্য</button>
+          </div>
+          <div id="commentBoxContainer" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            ${commentsListHtml}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('readerModal').classList.remove('hidden');
+    }
+
+    async function toggleLike(storyId) {
+      const res = await fetch('/api/stories/' + storyId + '/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authorId: currentUserId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const btn = document.getElementById('likeBtn');
+        const countTxt = document.getElementById('likeCountText');
+        countTxt.innerText = data.totalLikes + ' লাইক';
+        if (data.liked) {
+          btn.className = 'flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/40';
+        } else {
+          btn.className = 'flex items-center gap-2 text-xs font-semibold px-4 py-2 rounded-lg bg-slate-800 text-slate-300 hover:text-rose-400';
+        }
+        loadLibrary();
+      }
+    }
+
+    async function submitComment(storyId) {
+      const input = document.getElementById('commentInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const res = await fetch('/api/stories/' + storyId + '/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          authorId: currentUserId,
+          authorName: currentFullName,
+          text: text
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        input.value = '';
+        openReader(storyId);
+        loadLibrary();
+      } else {
+        alert(data.error);
+      }
+    }
+
+    async function showWallet() {
+      if (!currentUserId) return alert('প্রথমে একটি আইডি সেট করুন!');
+      const res = await fetch('/api/users/' + currentUserId + '/wallet');
+      const data = await res.json();
+      if (res.ok) {
+        document.getElementById('walletAuthorId').innerText = '@' + data.authorId;
+        document.getElementById('walletAdPoints').innerText = data.adPoints;
+        document.getElementById('walletModal').classList.remove('hidden');
+      } else {
+        alert(data.error);
+      }
+    }
+
+    function closeWallet() {
+      document.getElementById('walletModal').classList.add('hidden');
+    }
+
+    async function toggleFollow(targetId) {
+      const res = await fetch('/api/users/follow-toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentUserId: currentUserId, targetAuthorId: targetId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const btn = document.getElementById('followBtn');
+        if (btn) {
+          btn.innerText = data.following ? '✓ ফলোয়িং' : '+ লেখককে ফলো করুন';
+          btn.className = data.following 
+            ? 'bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg'
+            : 'bg-amber-500 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg';
+        }
+      }
+    }
+
+    async function rateStory(id, stars) {
+      const res = await fetch('/api/stories/' + id + '/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stars: stars, voterAuthorId: currentUserId })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('আপনার ★ ' + stars + ' স্টার জমা হয়েছে!');
+        openReader(id);
+        loadLibrary();
+        loadTopTen();
+      } else {
+        alert(data.error);
+      }
+    }
+
+    async function submitStory(e) {
+      e.preventDefault();
+      const payload = {
+        title: document.getElementById('postTitle').value,
+        genre: document.getElementById('postGenre').value,
+        content: document.getElementById('postContent').value,
+        authorId: currentUserId
+      };
+
+      const res = await fetch('/api/stories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert('গল্প সফলভাবে প্রকাশিত ও সময় লক করা হয়েছে!');
+        closePublishModal();
+        e.target.reset();
+        loadLibrary();
+        loadTopTen();
+      } else {
+        const d = await res.json();
+        alert('ত্রুটি: ' + d.error);
+      }
+    }
+
+    function closeReader() { document.getElementById('readerModal').classList.add('hidden'); }
+    function openPublishModal() { document.getElementById('publishModal').classList.remove('hidden'); }
+    function closePublishModal() { document.getElementById('publishModal').classList.add('hidden'); }
+    function refreshApp() { 
+      const s = document.getElementById('desktopSearch');
+      if (s) s.value = '';
+      init(); 
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        }[m];
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>
